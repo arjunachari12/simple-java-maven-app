@@ -15,9 +15,22 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
       
-      - name: Build in Maven Container
-        run: |
-          docker run --rm -v ${{ github.workspace }}:/workspace -w /workspace maven:3-alpine mvn -B -DskipTests clean package
+      - name: Setup Java and Maven
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: maven
+          maven-version: 3.9.2
+      
+      - name: Build
+        run: mvn -B -DskipTests clean package
+      
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: my-app-jar
+          path: target/my-app-1.0-SNAPSHOT.jar
 
   test:
     runs-on: ubuntu-latest
@@ -26,10 +39,17 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
       
-      - name: Test in Maven Container
-        run: |
-          docker run --rm -v ${{ github.workspace }}:/workspace -w /workspace maven:3-alpine mvn test
-
+      - name: Setup Java and Maven
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: maven
+          maven-version: 3.9.2
+      
+      - name: Run Tests
+        run: mvn verify
+      
       - name: Publish Test Results
         if: always()
         uses: actions/upload-artifact@v4
@@ -44,7 +64,19 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
       
-      - name: Deliver in Maven Container
-        run: |
-          docker run --rm -v ${{ github.workspace }}:/workspace -w /workspace maven:3-alpine ./jenkins/scripts/deliver.sh
-
+      - name: Setup Java and Maven
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: maven
+          maven-version: 3.9.2
+      
+      - name: Download Build Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: my-app-jar
+          path: target/
+      
+      - name: Deliver
+        run: ./jenkins/scripts/deliver.sh
